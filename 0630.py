@@ -1,5 +1,5 @@
 #
-# Rotate & Translate
+# Demo code from teacher
 #
 
 import pygame
