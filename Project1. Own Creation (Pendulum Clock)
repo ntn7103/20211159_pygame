@@ -1,0 +1,66 @@
+import pygame
+import numpy as np
+
+pygame.init()
+clock = pygame.time.Clock()
+
+WINDOW_WIDTH = 600
+WINDOW_HEIGHT = 600
+
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption("Pendulum Clock")
+
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
+radius = 200
+center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
+
+# Parameter of the pendulumclock
+length = 150 #The length of rod
+angle = np.pi / 2  # Initial angle of the pendulum
+max_angle = np.pi / 4  # The maximum angle the pendulum can swing
+swing_period = 2  # The time it takes for the pendulum to swing back and forth (in seconds)
+
+# MAIN
+done = True
+while done:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            done = False
+
+    # Clear the screen
+    screen.fill(WHITE)
+
+    # Draw the clock face
+    pygame.draw.circle(screen, BLACK, center, radius, 5)
+
+    # Create the transformation matrix
+    Rmat = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+
+    # Calculate the initial position of the pendulum
+    initial_position = np.array([0, length])
+
+    # Use rotation transformation to get the current position of the pendulum
+    current_position = Rmat.dot(initial_position)
+
+    # Calculate the position
+    x = int(center[0] + current_position[0])
+    y = int(center[1] + current_position[1])
+
+    # Draw the pendulum rod and bob
+    pygame.draw.line(screen, BLACK, center, (x, y), 10)
+    pygame.draw.circle(screen, BLACK, (x, y), 20)
+
+    # Update the pendulum angle based on time
+    time = pygame.time.get_ticks() / 1000  # Get the time in seconds
+    angle = max_angle * np.sin(2 * np.pi * time / swing_period)
+
+    # Update the display
+    pygame.display.flip()
+
+    # Set the frame rate
+    clock.tick(60)
+
+# Quit the game
+pygame.quit()
