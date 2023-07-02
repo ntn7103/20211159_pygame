@@ -1,0 +1,188 @@
+# 20211159 Nguyen Thao Nhi
+# PROJECT 1: Solar system
+
+
+import pygame
+import numpy as np
+import os
+
+def getRegularPolygon(N, radius=1):
+    v = np.zeros((N,2))
+    for i in range(N):
+        deg = i * 360. / N
+        rad = deg * np.pi / 180.
+        x = radius * np.cos(rad)
+        y = radius * np.sin(rad)
+        v[i] = [x, y]
+    return v
+
+def getRectangle(width, height, x=0, y=0):
+    points = np.array([ [0, 0], 
+                        [width, 0], 
+                        [width, height], 
+                        [0, height]], dtype='float')
+    points = points + [x, y]
+
+    return points
+
+def get_circle(radius):
+    return np.array([[0, 0], [0, radius]], dtype='float')
+
+def Rmat(degree):
+    # Rotation Matrix
+    # Counter-clockwise rotation
+    radian = np.deg2rad(degree)
+    c = np.cos(radian)
+    s = np.sin(radian)
+    R = np.array([ [c, -s, 0], 
+                   [s, c, 0], 
+                   [0, 0, 1]], dtype='float')
+    return R 
+
+def Tmat(tx, ty):
+    # Translation Matrix
+    # Ma trận tịnh tiến.
+    T = np.array([ [1, 0, tx], 
+                   [0, 1, ty], 
+                   [0, 0, 1]], dtype='float')
+    return T 
+
+
+def draw(screen, M, points, color=(0,0,0), p0=None):
+    R = M[0:2, 0:2]
+    t = M[0:2, 2]
+
+    points_transformed = ( R @ points.T ).T + t
+    pygame.draw.polygon(screen, color, points_transformed, 2)
+    if p0 is not None:
+        pygame.draw.line(screen, (0,0,0), p0, points_transformed[0])
+
+def draw_circle(screen, M, points, radius, color=(0,0,0), p0=None):
+    R = M[0:2, 0:2]
+    t = M[0:2, 2]
+
+    p_transformed = (R @ points.T).T + t
+    print(M)
+    print(p_transformed)
+    pygame.draw.circle(screen, color, p_transformed[0], radius)
+    if p0 is not None:
+        pygame.draw.line(screen, (0,0,0), p0, p_transformed[1])
+    return p_transformed
+
+WINDOW_WIDTH = 1000
+WINDOW_HEIGHT = 1000
+
+
+pygame.init()  # 1! initialize the whole pygame system!
+pygame.display.set_caption("Solar System")
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+clock = pygame.time.Clock()
+
+center = np.array([WINDOW_WIDTH/2, WINDOW_HEIGHT/2])
+
+# Colors
+WHITE = (255, 255, 255)
+sun_color = (255, 255, 0) # yellow
+earth_color = (91, 197, 194) # blue
+moon_color = (192, 192, 192) # silver
+mars_color = (139, 69, 19) # brown
+Satellite1_color = (247, 171, 154) #coral
+Satellite2_color = (219, 250, 150) #pale green
+Satellite3_color = (149, 213, 255) #pale blue
+
+# Radius
+radius_sun = 70
+radius_earth = 40
+radius_moon = 20
+
+# Distance
+dist_Sun_Earth = 200
+dist_Earth_Moon = 100
+dist_Sun_mars = 400
+dist_mars_Satellite = 50
+dist_mars_Satellite2 = 100
+dist_mars_satellite_1 = 20
+
+# Circles
+Sun = get_circle(radius_sun)
+Earth = get_circle(radius_earth)
+Moon = get_circle(radius_moon)
+mars = get_circle(30)
+Satellite1 = get_circle(10)
+Satellite2 = get_circle(10)
+Satellite3 = get_circle(5)
+
+# Angles
+angle_sun = 0
+angle_sun_earth = 0
+angle_sun_mars = 0
+angle_earth = 0
+angle_earth_moon = 0
+angle_moon = 0
+angle_mars = 0
+angle_mars_satellite = 0 # angle between mars and satellite
+angle_satellite = 0 # both satellites have the same angle
+
+orbit_earth = 200
+orbit_mars = 400
+
+current_path = os.path.dirname(__file__)
+assets_path = os.path.join(current_path, 'background')
+
+background_image = pygame.image.load(os.path.join(assets_path, 'space_background.png'))
+
+done = False
+while not done:
+    angle_sun += 3
+    angle_sun_earth += 1
+    angle_earth += 5
+    angle_earth_moon += 10
+    angle_moon += 7
+    
+    angle_sun_mars += 1.5
+    angle_mars += 2
+    angle_satellite += 5
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            done = True
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            print("Mouse Button Pressed!")
+        
+        
+    screen.blit(background_image, background_image.get_rect())
+
+    pygame.draw.circle(screen, WHITE, (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), orbit_earth, 1)
+    pygame.draw.circle(screen, WHITE, (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), orbit_mars, 1)
+
+
+
+    center=(WINDOW_WIDTH/2., WINDOW_HEIGHT/2.)
+    M_sun = Tmat(center[0], center[1]) @ Rmat(angle_sun)
+    draw_circle(screen, M_sun, Sun, radius_sun, sun_color, center)
+
+    M_earth = Tmat(center[0], center[1]) @ Rmat(angle_sun_earth) @ Tmat(dist_Sun_Earth, 0) @ Rmat(-angle_sun_earth)  @ Rmat(angle_earth)
+    draw_circle(screen, M_earth, Earth, radius_earth, earth_color, M_earth[:2, 2])
+    
+    M_moon = M_earth @ Rmat(angle_earth_moon) @ Tmat(dist_Earth_Moon, 0) @ Rmat(angle_moon)
+    draw_circle(screen, M_moon, Moon, radius_moon, moon_color, M_moon[:2, 2])
+    
+    M_mars = Tmat(center[0], center[1]) @ Rmat(angle_sun_mars) @ Tmat(dist_Sun_mars, 0) @ Rmat(-angle_sun_mars) @ Rmat(angle_mars)
+    draw_circle(screen, M_mars, mars, 30, mars_color, M_mars[:2, 2])
+
+    M_satellite1 = M_mars @ Rmat(angle_mars_satellite) @ Tmat(dist_mars_Satellite, 0) @ Rmat(angle_satellite)
+    draw_circle(screen, M_satellite1, Satellite1, 10, Satellite1_color, M_satellite1[:2, 2])
+
+    M_satellite2 = M_mars @ Rmat(angle_mars_satellite + 180) @ Tmat(dist_mars_Satellite2, 0) @ Rmat(angle_satellite)
+    draw_circle(screen, M_satellite2, Satellite2, 10, Satellite2_color, M_satellite2[:2, 2])
+
+    M_satellite3 = M_satellite2 @ Rmat(angle_mars_satellite + 180) @ Tmat(dist_mars_Satellite, 0) @Rmat(angle_satellite)
+    draw_circle(screen, M_satellite3, Satellite3, 5, Satellite3_color, M_satellite3[:2, 2])
+    
+    # update screen
+
+    pygame.display.flip()
+    clock.tick(60)
+
+# 게임 종료
+pygame.quit()
