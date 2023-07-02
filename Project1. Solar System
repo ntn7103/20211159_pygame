@@ -69,6 +69,10 @@ def draw_circle(screen, M, points, radius, color=(0,0,0), p0=None):
         pygame.draw.line(screen, (0,0,0), p0, p_transformed[1])
     return p_transformed
 
+def draw_spaceship(screen, image, M):
+    spaceship_rect = image.get_rect(center=(M[0, 2], M[1, 2]))
+    screen.blit(image, spaceship_rect)
+
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 1000
 
@@ -122,6 +126,8 @@ angle_moon = 0
 angle_mars = 0
 angle_mars_satellite = 0 # angle between mars and satellite
 angle_satellite = 0 # both satellites have the same angle
+angle_spaceship = 0
+distance_spaceship = 200
 
 orbit_earth = 200
 orbit_mars = 400
@@ -130,6 +136,13 @@ current_path = os.path.dirname(__file__)
 assets_path = os.path.join(current_path, 'background')
 
 background_image = pygame.image.load(os.path.join(assets_path, 'space_background.png'))
+spaceship_image = pygame.image.load(os.path.join(assets_path, 'spaceship.png'))
+
+spaceship_size = (30, 30)  # Adjust the size as desired
+scaled_spaceship_image = pygame.transform.scale(spaceship_image, spaceship_size)
+
+
+#MAIN
 
 done = False
 while not done:
@@ -179,6 +192,13 @@ while not done:
     M_satellite3 = M_satellite2 @ Rmat(angle_mars_satellite + 180) @ Tmat(dist_mars_Satellite, 0) @Rmat(angle_satellite)
     draw_circle(screen, M_satellite3, Satellite3, 5, Satellite3_color, M_satellite3[:2, 2])
     
+    M_spaceship = Tmat(center[0], center[1]) @ Rmat(angle_spaceship) @ Tmat(distance_spaceship, 0)
+    draw_spaceship(screen, scaled_spaceship_image, M_spaceship)
+
+    # Update spaceship's angle and distance
+    angle_spaceship += 2  # Increment the angle for rotation
+    distance_spaceship = 200 + 100 * np.sin(angle_spaceship * np.pi / 180)  # Create oscillation effect
+
     # update screen
 
     pygame.display.flip()
