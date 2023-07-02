@@ -1,0 +1,129 @@
+#20211159 Nguyen Thao Nhi
+#Project 1. Clock
+
+import pygame
+import numpy as np
+import os 
+
+# Function for defining the clock hands
+def getRectangle(width, height, x=0, y=0):
+    points = np.array([ [0, 0], 
+                        [width, 0], 
+                        [width, height], 
+                        [0, height]], dtype='float')
+    points = points + [x, y]
+    return points
+
+
+def Rmat(degree):
+    # Rotation Matrix
+    # Counter-clockwise rotation
+    # Clockwise rotation: (-1)*R
+    radian = np.deg2rad(degree)
+    c = np.cos(radian)
+    s = np.sin(radian)
+    R = np.array([ [c, -s, 0], 
+                   [s, c, 0], 
+                   [0, 0, 1]], dtype='float')
+    return R 
+
+def Tmat(tx, ty):
+    # Translation Matrix
+    T = np.array([ [1, 0, tx], 
+                   [0, 1, ty], 
+                   [0, 0, 1]], dtype='float')
+    return T 
+
+pygame.init()
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 800
+
+# 색 정의
+GREEN = (100, 200, 100)
+
+pygame.init()  # initialize the whole pygame system!
+pygame.display.set_caption("Mouse")
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+clock = pygame.time.Clock()
+
+# Function for drawing by matrix
+def draw(M, points, color=(0,0,0), p0=None):
+    R = M[0:2, 0:2]
+    t = M[0:2, 2]
+    points_transformed = ( R @ points.T ).T + t 
+    pygame.draw.polygon(screen, color, points_transformed, 2)
+    if p0 is not None:
+        pygame.draw.line(screen, (0,0,0), p0, points_transformed[0])
+
+# The parameter of clock hands
+radius_second = 300
+radius_minute = 250
+radius_hour = 200
+
+last_angle_second = 0
+last_angle_minute = 0
+last_angle_hour = 0
+angle_second = 0 # degree
+angle_minute = 0
+angle_hour = 0
+
+# Adding sound
+current_path = os.path.dirname(__file__)
+assets_path = os.path.join(current_path, 'background')
+
+pygame.mixer.music.load(os.path.join(assets_path, 'clock.mp3'))
+sound = pygame.mixer.Sound(os.path.join(assets_path, 'clock.mp3'))
+
+
+# Create a matrix of second.
+# # The points of second needle are in the center of screen
+# Matrix_second = Tmat(WINDOW_WIDTH//2, WINDOW_HEIGHT//2) 
+# # Rotate the second needle
+# Matrix_second = Matrix_second @ Rmat(angle_second)
+# # Translate the second needle to the end of second needle
+# Matrix_second = Matrix_second @ Tmat(0, -radius_second)
+
+
+done = False
+while not done:
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            done = True
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            print("Mouse Button Pressed!")
+        
+        
+    screen.fill((255, 255, 255))
+
+    # current_time = pygame.time.get_ticks()
+
+    # Calculate the angles of the needles
+    angle_second += 2*np.pi
+    if angle_second - last_angle_second >= 2*np.pi:   
+        last_angle_second = angle_second
+        angle_minute += 2*np.pi/12
+
+    if angle_minute - last_angle_minute >= 2*np.pi:
+        angle_hour += 2*np.pi/12
+        last_angle_minute = angle_minute    
+
+    
+    if angle_hour - last_angle_hour >= 4.5*2*np.pi:
+        last_angle_hour = angle_hour
+        sound.play() #playing sound when the clock turn in the hour
+
+
+    Matrix_second = Tmat(WINDOW_WIDTH//2, WINDOW_HEIGHT//2) @ Rmat(angle_second) @ Tmat(0, -radius_second)
+    Matrix_minute = Tmat(WINDOW_WIDTH//2, WINDOW_HEIGHT//2) @ Rmat(angle_minute) @ Tmat(0, -radius_minute)
+    Matrix_hour = Tmat(WINDOW_WIDTH//2, WINDOW_HEIGHT//2) @ Rmat(angle_hour) @ Tmat(0, -radius_hour)
+
+    draw(Matrix_second, getRectangle(10, radius_second//2), (255,0,0), (WINDOW_WIDTH//2, WINDOW_HEIGHT//2) )
+    draw(Matrix_minute, getRectangle(10, radius_minute//2), (0,255,0), (WINDOW_WIDTH//2, WINDOW_HEIGHT//2) )
+    draw(Matrix_hour, getRectangle(10, radius_hour//2), (0,0,255), (WINDOW_WIDTH//2, WINDOW_HEIGHT//2) )
+    pygame.draw.circle(screen, (0, 0, 0), (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), 350, 10)
+    # update screen
+    pygame.display.update()
+
+# 게임 종료
+pygame.quit()
